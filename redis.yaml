@@ -8,39 +8,22 @@
         name: redis6
         state: present
 
-    - name: create redis config
-      ansible.builtin.copy:
-        dest: /etc/redis.conf
-        content: |
-          bind 0.0.0.0
-          protected-mode no
-          port 6379
-        owner: root
-        group: root
-        mode: '0644'
-
-    - name: create systemd override directory
-      ansible.builtin.file:
-        path: /etc/systemd/system/redis6.service.d
-        state: directory
-
-    - name: override redis6 service to use config
-      ansible.builtin.copy:
-        dest: /etc/systemd/system/redis6.service.d/override.conf
-        content: |
-          [Service]
-          ExecStart=
-          ExecStart=/usr/bin/redis-server /etc/redis.conf
-
-    # ✅ Reload BEFORE restart
-    - name: reload systemd daemon
-      ansible.builtin.command: systemctl daemon-reload
-
     - name: enable and start redis6
       ansible.builtin.service:
         name: redis6
-        state: restarted
+        state: started
         enabled: yes
+
+    - name: allow remote connections at runtime
+      ansible.builtin.command: >
+        redis6-cli CONFIG SET bind 0.0.0.0
+      ignore_errors: yes
+
+    - name: disable protected mode at runtime
+      ansible.builtin.command: >
+        redis6-cli CONFIG SET protected-mode no
+      ignore_errors: yes
+
 
 
 
