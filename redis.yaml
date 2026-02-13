@@ -3,14 +3,9 @@
   become: yes
 
   tasks:
-  - name: Install EPEL repository
-    ansible.builtin.dnf:
-      name: epel-release
-      state: present
-
   - name: Install Redis
     ansible.builtin.dnf:
-      name: redis
+      name: redis6
       state: present
 
   - name: Allow remote connections
@@ -27,7 +22,8 @@
 
   - name: Enable and start Redis
     ansible.builtin.service:
-      name: redis
+      name: redis6
       state: started
       enabled: yes
+
 
