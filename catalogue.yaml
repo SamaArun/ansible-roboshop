@@ -73,7 +73,7 @@
       msg: "{{ catalogue_output }}"
 
   - name: load products
-    ansible.builtin.command: mongosh --host 172.31.22.123 </app/db/master-data.js
+    ansible.builtin.shell: mongosh --host 172.31.22.123 </app/db/master-data.js
     when: catalogue_output.stdout | int < 0
 
 
