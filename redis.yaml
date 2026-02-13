@@ -2,6 +2,9 @@
   hosts: redis
   become: yes
 
+  vars:
+    redis_conf: /etc/redis6/redis6.conf
+
   tasks:
   - name: Install Redis
     ansible.builtin.dnf:
@@ -10,13 +13,13 @@
 
   - name: Allow remote connections
     ansible.builtin.replace:
-      path: /etc/redis/redis.conf
+      path: "{{ redis_conf }}"
       regexp: '127.0.0.1'
       replace: '0.0.0.0'
 
   - name: Disable protected mode
     ansible.builtin.lineinfile:
-      path: /etc/redis/redis.conf
+      path: "{{ redis_conf }}"
       regexp: '^protected-mode'
       line: 'protected-mode no'
 
@@ -25,5 +28,6 @@
       name: redis6
       state: started
       enabled: yes
+
 
 
