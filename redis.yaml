@@ -3,6 +3,11 @@
   become: yes
 
   tasks:
+  - name: Install EPEL repository
+    ansible.builtin.dnf:
+      name: epel-release
+      state: present
+
   - name: Install Redis
     ansible.builtin.dnf:
       name: redis
@@ -25,3 +30,4 @@
       name: redis
       state: started
       enabled: yes
+
