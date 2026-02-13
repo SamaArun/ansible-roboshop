@@ -2,10 +2,22 @@
   hosts: redis
   become: yes
   tasks:
-  - name: install redis
-    ansible.builtin.dnf:
+  - name: refresh dnf cache
+    command: dnf makecache
+
+  - name: try installing redis
+    dnf:
       name: redis
       state: present
+    register: redis_install
+    ignore_errors: yes
+
+  - name: install redis6 if redis not found
+    dnf:
+      name: redis6
+      state: present
+    when: redis_install is failed
+
 
 
   - name: allow remote connections
