@@ -1,44 +1,27 @@
-- name: install redis component
+- name: Install Redis on Amazon Linux 2023
   hosts: redis
   become: yes
 
   tasks:
-  - name: install redis6
+  - name: Install Redis
     ansible.builtin.dnf:
-      name: redis6
+      name: redis
       state: present
 
-  - name: create redis config file
-    ansible.builtin.copy:
-      dest: /etc/redis.conf
-      content: |
-        bind 0.0.0.0
-        protected-mode no
-        port 6379
-        daemonize no
-      owner: root
-      group: root
-      mode: '0644'
+  - name: Allow remote connections
+    ansible.builtin.replace:
+      path: /etc/redis/redis.conf
+      regexp: '127.0.0.1'
+      replace: '0.0.0.0'
 
-  - name: update redis service to use config file
+  - name: Disable protected mode
     ansible.builtin.lineinfile:
-      path: /usr/lib/systemd/system/redis6.service
-      regexp: '^ExecStart='
-      line: 'ExecStart=/usr/bin/redis-server /etc/redis.conf'
-    notify: reload systemd
+      path: /etc/redis/redis.conf
+      regexp: '^protected-mode'
+      line: 'protected-mode no'
 
-  - name: enable and start redis6
+  - name: Enable and start Redis
     ansible.builtin.service:
-      name: redis6
+      name: redis
       state: started
       enabled: yes
-
-  handlers:
-    - name: reload systemd
-      ansible.builtin.command: systemctl daemon-reexec
-
-
-
-
-
-
