@@ -8,21 +8,34 @@
         name: redis6
         state: present
 
+    - name: create redis config file
+      ansible.builtin.copy:
+        dest: /etc/redis.conf
+        content: |
+          bind 0.0.0.0
+          protected-mode no
+          port 6379
+          daemonize no
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: update redis service to use config file
+      ansible.builtin.lineinfile:
+        path: /usr/lib/systemd/system/redis6.service
+        regexp: '^ExecStart='
+        line: 'ExecStart=/usr/bin/redis-server /etc/redis.conf'
+      notify: reload systemd
+
     - name: enable and start redis6
       ansible.builtin.service:
         name: redis6
         state: started
         enabled: yes
 
-    - name: allow remote connections at runtime
-      ansible.builtin.command: >
-        redis6-cli CONFIG SET bind 0.0.0.0
-      ignore_errors: yes
-
-    - name: disable protected mode at runtime
-      ansible.builtin.command: >
-        redis6-cli CONFIG SET protected-mode no
-      ignore_errors: yes
+  handlers:
+    - name: reload systemd
+      ansible.builtin.command: systemctl daemon-reexec
 
 
 
