@@ -15,7 +15,7 @@
     ansible.builtin.lineinfile:
       path: "{{ redis_conf }}"
       regexp: '^bind'
-      line: 'bind 0.0.0.0'
+      line: 'bind 0.0.0.0 ::1'
 
   - name: Disable protected mode
     ansible.builtin.lineinfile:
@@ -23,11 +23,12 @@
       regexp: '^protected-mode'
       line: 'protected-mode no'
 
-  - name: Enable and start Redis
+  - name: Restart Redis
     ansible.builtin.service:
       name: redis6
-      state: started
+      state: restarted
       enabled: yes
+
 
 
 
