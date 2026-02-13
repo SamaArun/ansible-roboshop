@@ -31,7 +31,10 @@
           [Service]
           ExecStart=
           ExecStart=/usr/bin/redis-server /etc/redis.conf
-      notify: reload systemd
+
+    # ✅ Reload BEFORE restart
+    - name: reload systemd daemon
+      ansible.builtin.command: systemctl daemon-reload
 
     - name: enable and start redis6
       ansible.builtin.service:
@@ -39,9 +42,6 @@
         state: restarted
         enabled: yes
 
-  handlers:
-    - name: reload systemd
-      ansible.builtin.command: systemctl daemon-reload
 
 
 
