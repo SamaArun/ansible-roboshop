@@ -7,16 +7,22 @@
 
   tasks:
 
-  - name: Install Redis package
+  - name: Install Redis
     ansible.builtin.dnf:
       name: redis6
       state: present
 
-  - name: Configure bind address safely
+  - name: Comment existing bind lines
+    ansible.builtin.replace:
+      path: "{{ redis_conf }}"
+      regexp: '^bind .*'
+      replace: '# \g<0>'
+
+  - name: Add new bind configuration
     ansible.builtin.lineinfile:
       path: "{{ redis_conf }}"
-      regexp: '^bind'
-      line: 'bind 0.0.0.0 -::1'
+      line: 'bind 0.0.0.0'
+      insertafter: EOF
 
   - name: Disable protected mode
     ansible.builtin.lineinfile:
