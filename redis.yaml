@@ -3,37 +3,41 @@
   become: yes
 
   tasks:
-  - name: install redis6
-    ansible.builtin.dnf:
-      name: redis6
-      state: present
+    - name: install redis6
+      ansible.builtin.dnf:
+        name: redis6
+        state: present
 
-  - name: create redis config
-    ansible.builtin.copy:
-      dest: /etc/redis.conf
-      content: |
-        bind 0.0.0.0
-        protected-mode no
-        port 6379
-        daemonize no
-      owner: root
-      group: root
-      mode: '0644'
+    - name: create redis config
+      ansible.builtin.copy:
+        dest: /etc/redis.conf
+        content: |
+          bind 0.0.0.0
+          protected-mode no
+          port 6379
+          daemonize no
+        owner: root
+        group: root
+        mode: '0644'
 
-  - name: configure redis6 service to use config
-    ansible.builtin.lineinfile:
-      path: /usr/lib/systemd/system/redis6.service
-      regexp: '^ExecStart='
-      line: 'ExecStart=/usr/bin/redis-server /etc/redis.conf'
-    notify: reload systemd
+    - name: configure redis6 service to use config
+      ansible.builtin.lineinfile:
+        path: /usr/lib/systemd/system/redis6.service
+        regexp: '^ExecStart='
+        line: 'ExecStart=/usr/bin/redis-server /etc/redis.conf'
+      notify: reload systemd
 
-  - name: restart redis6
-    ansible.builtin.service:
-      name: redis6
-      state: restarted
+    - name: reload systemd
+      ansible.builtin.command: systemctl daemon-reload
+
+    - name: restart redis6
+      ansible.builtin.service:
+        name: redis6
+        state: restarted
 
   handlers:
-  - name: reload systemd
-    ansible.builtin.command: systemctl daemon-reexec
+    - name: reload systemd
+      ansible.builtin.command: systemctl daemon-reload
+
 
 
