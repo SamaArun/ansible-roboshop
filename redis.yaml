@@ -3,37 +3,10 @@
   become: yes
 
   tasks:
-  - name: refresh dnf cache
-    command: dnf makecache
-
-  - name: try installing redis
-    dnf:
-      name: redis
-      state: present
-    register: redis_install
-    ignore_errors: yes
-
-  - name: install redis6 if redis not found
+  - name: install redis6
     dnf:
       name: redis6
       state: present
-    when: redis_install is failed
-
-  - name: set redis config path
-    set_fact:
-      redis_conf: "{{ '/etc/redis.conf' if redis_install is succeeded else '/etc/redis6.conf' }}"
-
-  - name: allow remote connections
-    replace:
-      path: "{{ redis_conf }}"
-      regexp: '127.0.0.1'
-      replace: '0.0.0.0'
-
-  - name: disable protected mode
-    lineinfile:
-      path: "{{ redis_conf }}"
-      regexp: '^protected-mode'
-      line: 'protected-mode no'
 
   - name: enable and start redis
     service:
@@ -41,3 +14,21 @@
       state: started
       enabled: yes
 
+
+  - name: allow remote connections
+    ansible.builtin.replace:
+      path: /etc/redis/redis.conf
+      regexp: '127.0.0.1'
+      replace: '0.0.0.0'
+
+  - name: disable protected mode
+    ansible.builtin.lineinfile:
+      path: /etc/redis/redis.conf
+      regexp: 'protected-mode'
+      replace: protected-mode no 
+
+  - name: enable and start redis
+    ansible.builtin.service:
+      name: redis
+      state: started
+      enabled: yes
