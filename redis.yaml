@@ -11,11 +11,11 @@
       name: redis6
       state: present
 
-  - name: Allow remote connections
-    ansible.builtin.replace:
+  - name: Configure bind address
+    ansible.builtin.lineinfile:
       path: "{{ redis_conf }}"
-      regexp: '127.0.0.1'
-      replace: '0.0.0.0'
+      regexp: '^bind'
+      line: 'bind 0.0.0.0'
 
   - name: Disable protected mode
     ansible.builtin.lineinfile:
