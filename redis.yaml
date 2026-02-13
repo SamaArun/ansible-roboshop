@@ -2,6 +2,9 @@
   hosts: redis
   become: yes
 
+  vars:
+    redis_conf: /etc/redis.conf
+
   tasks:
 
   - name: Install Redis package
@@ -9,33 +12,17 @@
       name: redis6
       state: present
 
-  # Detect the actual config file used by the service
-  - name: Get redis service config path
-    ansible.builtin.shell: "systemctl cat redis6 | grep -o '/etc[^ ]*conf' | head -1"
-    register: redis_conf_path
-    changed_when: false
-
-  - name: Set redis config fact
-    ansible.builtin.set_fact:
-      redis_conf: "{{ redis_conf_path.stdout | default('/etc/redis6/redis6.conf') }}"
-
-  - name: Show detected redis config
-    ansible.builtin.debug:
-      msg: "Redis config file: {{ redis_conf }}"
-
-  - name: Configure bind address
+  - name: Configure bind address safely
     ansible.builtin.lineinfile:
       path: "{{ redis_conf }}"
       regexp: '^bind'
-      line: 'bind 0.0.0.0'
-      create: yes
+      line: 'bind 0.0.0.0 -::1'
 
   - name: Disable protected mode
     ansible.builtin.lineinfile:
       path: "{{ redis_conf }}"
       regexp: '^protected-mode'
       line: 'protected-mode no'
-      create: yes
 
   - name: Restart and enable Redis
     ansible.builtin.service:
