@@ -1,6 +1,7 @@
 - name: install redis component
   hosts: redis
   become: yes
+
   tasks:
   - name: refresh dnf cache
     command: dnf makecache
@@ -18,22 +19,24 @@
       state: present
     when: redis_install is failed
 
-
+  - name: set redis config path
+    set_fact:
+      redis_conf: "{{ '/etc/redis.conf' if redis_install is succeeded else '/etc/redis6.conf' }}"
 
   - name: allow remote connections
-    ansible.builtin.replace:
-      path: /etc/redis6.conf
+    replace:
+      path: "{{ redis_conf }}"
       regexp: '127.0.0.1'
       replace: '0.0.0.0'
 
   - name: disable protected mode
-    ansible.builtin.lineinfile:
-      path: /etc/redis6.conf
-      regexp: 'protected-mode'
-      replace: 'protected-mode no'
+    lineinfile:
+      path: "{{ redis_conf }}"
+      regexp: '^protected-mode'
+      line: 'protected-mode no'
 
   - name: enable and start redis
-    ansible.builtin.service:
+    service:
       name: redis
       state: started
       enabled: yes
