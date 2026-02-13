@@ -8,7 +8,7 @@
       name: redis6
       state: present
 
-  - name: create redis config file
+  - name: create redis config
     ansible.builtin.copy:
       dest: /etc/redis.conf
       content: |
@@ -20,20 +20,20 @@
       group: root
       mode: '0644'
 
-  - name: update redis service to use config file
+  - name: configure redis6 service to use config
     ansible.builtin.lineinfile:
       path: /usr/lib/systemd/system/redis6.service
       regexp: '^ExecStart='
       line: 'ExecStart=/usr/bin/redis-server /etc/redis.conf'
     notify: reload systemd
 
-  - name: enable and start redis6
+  - name: restart redis6
     ansible.builtin.service:
       name: redis6
-      state: started
-      enabled: yes
+      state: restarted
 
   handlers:
   - name: reload systemd
     ansible.builtin.command: systemctl daemon-reexec
+
 
