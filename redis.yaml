@@ -8,12 +8,11 @@
       name: redis6
       state: present
 
-  - name: enable and start redis
+  - name: enable and start redis6
     service:
-      name: redis
+      name: redis6
       state: started
       enabled: yes
-
 
   - name: allow remote connections
     ansible.builtin.replace:
