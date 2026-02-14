@@ -2,34 +2,21 @@
   hosts: shipping
   become: yes
   tasks:
-
-  # ----------------------------
-  # Install required packages
-  # ----------------------------
-  - name: install required packages
+  - name: install maven and mysql
     ansible.builtin.dnf:
       name: "{{ item }}"
-      state: present
+      state: installed
     loop:
-      - python3-cryptography
-      - maven
-      - mariadb105
-      - python3-pip
+    - maven
+    - mariadb105 #mysql server on amazon linux
 
-  - name: install PyMySQL
+  - name: install PyMySQL and cryptography
     ansible.builtin.pip:
-      name: PyMySQL
-      executable: pip3
-
-  # ----------------------------
-  # Create user & directory
-  # ----------------------------
-  - name: create roboshop system user
-    ansible.builtin.user:
-      name: roboshop
-      shell: /sbin/nologin
-      system: true
-      home: /app
+      name: "{{ item }}"
+      executable: pip3.9
+    loop: 
+      - cryptography
+      - PyMySQL
 
   - name: create app directory
     ansible.builtin.file:
@@ -38,21 +25,28 @@
       owner: roboshop
       group: roboshop
 
-  # ----------------------------
-  # Download & build shipping app
-  # ----------------------------
-  - name: download shipping code
+  - name: create roboshop system user
+    ansible.builtin.user:
+      name: roboshop
+      shell: /sbin/nologin
+      system: true
+      home: /app
+
+  - name: download shipping code 
     ansible.builtin.get_url:
       url: https://roboshop-artifacts.s3.amazonaws.com/shipping-v3.zip
       dest: /tmp/shipping.zip
 
-  - name: extract shipping code
+#this module thinks file exit on ansible control server, needs to extract on to remote machine
+#remote_src: yes means file already exists in catalogue server
+  - name: extract shipping code 
     ansible.builtin.unarchive:
       src: /tmp/shipping.zip
       dest: /app
       remote_src: yes
 
-  - name: build shipping package
+
+  - name: install maven dependencies
     ansible.builtin.command: mvn clean package
     args:
       chdir: /app
@@ -62,15 +56,12 @@
     args:
       chdir: /app
 
-  # ----------------------------
-  # Configure systemd service
-  # ----------------------------
   - name: copy shipping service
     ansible.builtin.copy:
       src: shipping.service
       dest: /etc/systemd/system/shipping.service
 
-  - name: reload systemd
+  - name: daemon reload
     ansible.builtin.systemd_service:
       daemon_reload: true
 
@@ -80,39 +71,31 @@
       state: started
       enabled: yes
 
-  # ----------------------------
-  # MySQL / MariaDB setup
-  # ----------------------------
-  - name: create cities database
-    community.mysql.mysql_db:
-      name: cities
-      state: present
-      login_user: root
-      login_password: RoboShop@1
-      login_host: localhost
 
-  - name: create shipping DB user
-    community.mysql.mysql_user:
-      name: shipping
-      password: RoboShop@1
-      host: localhost
-      priv: "cities.*:ALL"
-      state: present
-      login_user: root
-      login_password: RoboShop@1
-      login_host: localhost
-
-  - name: load cities schema
-    ansible.builtin.shell: |
-      mysql -u root -pRoboShop@1 cities < /app/schema/shipping.sql
-
-  # ----------------------------
-  # Safe DB verification
-  # ----------------------------
-  - name: verify shipping DB access
-    ansible.builtin.shell: |
-      mysql -u shipping -pRoboShop@1 -h localhost -e "SHOW TABLES IN cities;"
-
-
+  # - name: connect to mysql using app user
+  #   community.mysql.mysql_info:
+  #     login_user: shipping
+  #     login_password: RoboShop@1
+  #     login_host: #mysql ip
+  #     login_db: cities
   
+  - name: import data
+    tags:
+    - import
+    community.mysql.mysql_info_db:
+      name: all
+      login_user: root
+      login_password: RoboShop@1
+      login_host: #mysql ip
+      state: import
+      target: "{{ item }}"
+    loop:
+    - /app/db/schema.PyMySQL
+    - /app/db/app-user.sql  
+    - /app/db/master-data.sql
+
+  - name: restart shipping
+    ansible.builtin.service:
+      state: restarted
+      name: shipping
 
