@@ -10,8 +10,9 @@
 
   - name: install PyMySQL driver
     ansible.builtin.dnf:
-      name: python3-PyMySQL
+      name: python3-pymysql
       state: present
+
 
   - name: create roboshop system user
     ansible.builtin.user:
