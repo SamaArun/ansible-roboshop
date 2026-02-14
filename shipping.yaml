@@ -3,21 +3,27 @@
   become: yes
   tasks:
 
+  # ----------------------------
+  # Install required packages
+  # ----------------------------
   - name: install required packages
     ansible.builtin.dnf:
       name: "{{ item }}"
       state: present
     loop:
-      - python3-cryptography     # fixed package name
+      - python3-cryptography
       - maven
       - mariadb105
-      - python3-pip              # ensure pip exists
+      - python3-pip
 
   - name: install PyMySQL
     ansible.builtin.pip:
       name: PyMySQL
-      executable: pip3           # fixed (pip3.9 may not exist)
+      executable: pip3
 
+  # ----------------------------
+  # Create user & directory
+  # ----------------------------
   - name: create roboshop system user
     ansible.builtin.user:
       name: roboshop
@@ -32,6 +38,9 @@
       owner: roboshop
       group: roboshop
 
+  # ----------------------------
+  # Download & build shipping app
+  # ----------------------------
   - name: download shipping code
     ansible.builtin.get_url:
       url: https://roboshop-artifacts.s3.amazonaws.com/shipping-v3.zip
@@ -43,7 +52,7 @@
       dest: /app
       remote_src: yes
 
-  - name: install maven dependencies
+  - name: build shipping package
     ansible.builtin.command: mvn clean package
     args:
       chdir: /app
@@ -53,12 +62,15 @@
     args:
       chdir: /app
 
+  # ----------------------------
+  # Configure systemd service
+  # ----------------------------
   - name: copy shipping service
     ansible.builtin.copy:
       src: shipping.service
       dest: /etc/systemd/system/shipping.service
 
-  - name: daemon reload
+  - name: reload systemd
     ansible.builtin.systemd_service:
       daemon_reload: true
 
@@ -69,7 +81,7 @@
       enabled: yes
 
   # ----------------------------
-  # DB SETUP (required)
+  # MySQL / MariaDB setup
   # ----------------------------
   - name: create cities database
     community.mysql.mysql_db:
@@ -90,12 +102,17 @@
       login_password: RoboShop@1
       login_host: localhost
 
-  - name: connect to mysql using app user
-    community.mysql.mysql_info:
-      login_user: shipping
-      login_password: RoboShop@1
-      login_host: localhost      # fixed (same server)
-      login_db: cities
+  - name: load cities schema
+    ansible.builtin.shell: |
+      mysql -u root -pRoboShop@1 cities < /app/schema/shipping.sql
+
+  # ----------------------------
+  # Safe DB verification
+  # ----------------------------
+  - name: verify shipping DB access
+    ansible.builtin.shell: |
+      mysql -u shipping -pRoboShop@1 -h localhost -e "SHOW TABLES IN cities;"
+
 
   
 
