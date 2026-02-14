@@ -2,18 +2,19 @@
   hosts: mysql
   become: yes
   tasks:
-  - name: install mysql server
-    ansible.builtin.dnf:
-      name: mysql-server
-      state: installed
 
-  - name: start mysql server
+  - name: install mariadb server
+    ansible.builtin.dnf:
+      name: mariadb105-server
+      state: present
+
+  - name: start mariadb server
     ansible.builtin.service:
-      name: mysqld
+      name: mariadb
       state: started
       enabled: yes
 
- 
-  - name: setup root password
+  - name: set root password
     ansible.builtin.command: mysql_secure_installation --set-root-pass RoboShop@1
+
   
