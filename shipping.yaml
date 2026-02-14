@@ -61,10 +61,11 @@
       enabled: yes
 
 
-  - name: instll mysql client
+  - name: install mariadb client
     ansible.builtin.dnf:
-      name: mysql
-      state: installed
+      name: mariadb105
+      state: present
+
 
   - name: connect to mysql using app user
     community.mysql.mysql_info:
